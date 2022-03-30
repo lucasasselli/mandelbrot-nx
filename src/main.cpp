@@ -30,19 +30,31 @@ static void errorCallback(int error, const char* description)
     exit(EXIT_FAILURE);
 }
 
+static void frameBufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+	if (!width || !height)
+		return;
+
+	glViewport(0, 0, width, height);
+}
+
+double oldTime = 0;
+
 static void handleGamepad(GLFWwindow* window, const GLFWgamepadstate& gamepad)
 {
-	// double curTime = glfwGetTime();
-	// float deltaTime = curTime - s_updTime;
-	// s_updTime = curTime;
+	double curTime = glfwGetTime();
+	float deltaTime = curTime - oldTime;
+    oldTime = curTime;
+
+    float k = deltaTime/0.1;
 
 	const bool left_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS;
 	const bool right_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS;
 	const bool up_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS;
 	const bool down_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS;
 
-	const bool zoomin_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_TRIANGLE] == GLFW_PRESS;
-	const bool zoomout_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_CROSS] == GLFW_PRESS;
+	const bool zoomin_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] == GLFW_PRESS;
+	const bool zoomout_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER] == GLFW_PRESS;
 
 	const bool exit_pressed  = gamepad.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS;
 
@@ -54,23 +66,23 @@ static void handleGamepad(GLFWwindow* window, const GLFWgamepadstate& gamepad)
     if (exit_pressed)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 
-    if (up_pressed)
-        cy += 0.1*zoom;
+    if (up_pressed && cy < 1.0)
+        cy += 0.1*zoom*k;
 
-    if (down_pressed)
-        cy -= 0.1*zoom;
+    if (down_pressed && cy > -1.0)
+        cy -= 0.1*zoom*k;
 
-    if (right_pressed)
-        cx += 0.1*zoom;
+    if (right_pressed && cx < 1.0)
+        cx += 0.1*zoom*k;
 
-    if (left_pressed)
-        cx -= 0.1*zoom;
+    if (left_pressed && cx > -2.0)
+        cx -= 0.1*zoom*k;
 
-    if (zoomout_pressed)
-        zoom*=2.0;
+    if (zoomout_pressed && zoom < 1.0)
+        zoom *= (1.0 + k*0.5);
 
     if (zoomin_pressed)
-        zoom*=0.5;
+        zoom /= (1.0 + k*0.5);
 }
 
 static GLuint setupShader(GLenum type, const char* path)
@@ -204,7 +216,7 @@ static void sceneInit()
 
 static void sceneRender()
 {
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(shaderProgram);
@@ -236,7 +248,6 @@ static void sceneExit()
 
 int main(void)
 {
-
     deviceInit();
     printf("Program started!\n");
 
@@ -258,9 +269,11 @@ int main(void)
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
     gladLoadGL();
     glfwSwapInterval(1);
 
+    // Start rendering
     sceneInit();
 
 	GLFWgamepadstate gamepad = {};
@@ -273,11 +286,15 @@ int main(void)
 		if (!glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad))
 		{
 			// Gamepad not available, so let's fake it with keyboard
-			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT]  = glfwGetKey(window, GLFW_KEY_LEFT);
-			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] = glfwGetKey(window, GLFW_KEY_RIGHT);
-			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP]    = glfwGetKey(window, GLFW_KEY_UP);
-			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN]  = glfwGetKey(window, GLFW_KEY_DOWN);
-			gamepad.buttons[GLFW_GAMEPAD_BUTTON_START]      = glfwGetKey(window, GLFW_KEY_ESCAPE);
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT]  = glfwGetKey(window, GLFW_KEY_A);
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] = glfwGetKey(window, GLFW_KEY_D);
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP]    = glfwGetKey(window, GLFW_KEY_W);
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN]  = glfwGetKey(window, GLFW_KEY_S);
+
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] = glfwGetKey(window, GLFW_KEY_E);
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER]  = glfwGetKey(window, GLFW_KEY_Q);
+
+			gamepad.buttons[GLFW_GAMEPAD_BUTTON_START] = glfwGetKey(window, GLFW_KEY_ESCAPE);
 		}
         handleGamepad(window, gamepad);
 

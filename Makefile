@@ -29,7 +29,7 @@ CFLAGS += -Iglad/include
 LIBS   := -lGLU -lGL -lm -lglfw -ldl
 
 $(TARGET): $(SOURCES) glad/src/glad.c
-	$(CXX) -o $@ $(CFLAGS) $(CPPFLAGS) $? $(LIBS)
+	$(CXX) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LIBS)
 
 else
 
@@ -71,7 +71,7 @@ NROFLAGS += --nacp=$(TARGET).nacp --icon=$(APP_ICON) --romfsdir=$(ROMFS)
 NACPFLAGS += --titleid=$(APP_TITLEID)
 
 $(TARGET).elf : $(SOURCES)
-	$(CXX) -o $@ $(CFLAGS) $(CPPFLAGS) $? $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LIBS) $(LDFLAGS)
 
 endif
 
@@ -82,4 +82,4 @@ endif
 	nacptool --create "$(APP_TITLE)" "$(APP_AUTHOR)" "$(APP_VERSION)" $@
 
 clean:
-	@rm -rf $(TARGET).*
+	@rm -rf $(TARGET) $(TARGET).*
