@@ -1,17 +1,20 @@
-ifeq ($(strip $(MODE)),)
-$(error "Please set MODE in your environment.")
-endif
+APP_TITLE	:= Mandelbrot
+APP_AUTHOR	:= Luca Sasselli
+APP_VERSION	:= 1.0
+APP_ICON	:= icon.jpg
 
-TARGET      := nx-mandelbrot
+TARGET  := nx-mandelbrot
 
-SRCDIRS		:= src
-INCDIRS     := include
-ROMFS		:= res
+SRCDIRS	:= src
+INCDIRS := include
+ROMFS	:= res
 
-SOURCES := $(wildcard $(SRCDIRS)/*.cpp)
+SOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
 OBJECTS := $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SOURCES))
 
-CFLAGS  := $(foreach dir,$(INCDIRS),-I$(dir))
+INCLUDES := $(foreach dir,$(INCDIRS),-I$(dir))
+
+MODE ?= pc
 
 .PHONY: all clean
 all:
@@ -24,12 +27,12 @@ ifeq ($(MODE),pc)
 
 all: $(TARGET)
 
-CFLAGS += -Iglad/include
+INCLUDES += -Iglad/include
 
-LIBS   := -lGLU -lGL -lm -lglfw -ldl
+LIBS := -lGLU -lGL -lm -lglfw -ldl
 
 $(TARGET): $(SOURCES) glad/src/glad.c
-	$(CXX) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LIBS)
+	$(CXX) -o $@ $(CXXFLAGS) $(INCLUDES) $^ $(LIBS)
 
 else
 
@@ -46,34 +49,29 @@ endif
 
 include $(DEVKITPRO)/devkitA64/base_tools
 
-PORTLIBS	:= $(PORTLIBS_PATH)/switch
-PATH	    := $(PORTLIBS)/bin:$(PATH)
+PORTLIBS := $(PORTLIBS_PATH)/switch
+PATH	 := $(PORTLIBS)/bin:$(PATH)
 
-APP_TITLE	:= Mandelbrot
-APP_AUTHOR	:= Luca Sasselli
-APP_VERSION	:= 1.0
-APP_ICON	:=	$(DEVKITPRO)/libnx/default_icon.jpg
+ARCH :=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
+CXXFLAGS  += -g -Wall -O2 -ffunction-sections $(ARCH)
+CXXFLAGS  += -D__SWITCH__
+CXXFLAGS  += -fno-rtti -fno-exceptions
 
-CFLAGS	+=	-g -Wall -O2 -ffunction-sections $(ARCH)
-CFLAGS	+=	-D__SWITCH__
-CFLAGS  += -I$(DEVKITPRO)/libnx/include
-CFLAGS  += -I$(PORTLIBS)/include/
+INCLUDES  += -I$(DEVKITPRO)/libnx/include
+INCLUDES  += -I$(PORTLIBS)/include/
 
-CXXFLAGS += -fno-rtti -fno-exceptions
+LIBS := -L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib -lglad -lglfw3 -lEGL -lglapi -ldrm_nouveau -lnx -lm
 
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs
-
-LIBS	:= -L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib -lglad -lglfw3 -lEGL -lglapi -ldrm_nouveau -lnx -lm
-
-NROFLAGS += --nacp=$(TARGET).nacp --icon=$(APP_ICON) --romfsdir=$(ROMFS)
-NACPFLAGS += --titleid=$(APP_TITLEID)
+LDFLAGS := -specs=$(DEVKITPRO)/libnx/switch.specs
 
 $(TARGET).elf : $(SOURCES)
-	$(CXX) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $(CXXFLAGS) $(INCLUDES) $^ $(LIBS) $(LDFLAGS)
 
 endif
+
+NROFLAGS   := --nacp=$(TARGET).nacp --icon=$(APP_ICON) --romfsdir=$(ROMFS)
+NACPFLAGS  := --titleid=$(APP_TITLEID)
 
 %.nro : %.elf %.nacp
 	elf2nro $< $@ $(NROFLAGS)
