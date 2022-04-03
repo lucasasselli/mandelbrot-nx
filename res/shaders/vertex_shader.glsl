@@ -2,10 +2,13 @@
 
 layout (location = 0) in vec3 vPos;
 
-out vec2 pos;
+uniform vec2 offset;
+uniform float zoom;
+
+out vec2 c;
 
 void main()
 {
     gl_Position = vec4(vPos.x, vPos.y, vPos.z, 1.0);
-    pos = vec2(vPos.x, vPos.y);
+    c = vec2(vPos.x*zoom, vPos.y*zoom) + offset;
 }

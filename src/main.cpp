@@ -10,6 +10,8 @@
 
 #include "device.h"
 
+#define MAND_ITER  256
+
 const GLfloat palette_data[] =
 {
     0.0000, 0.0275, 0.3922,
@@ -78,11 +80,11 @@ static void handleGamepad(GLFWwindow* window, const GLFWgamepadstate& gamepad)
     if (left_pressed && cx > -2.0)
         cx -= 0.1*zoom*k;
 
-    if (zoomout_pressed && zoom < 1.0)
-        zoom *= (1.0 + k*0.5);
+    if (zoomout_pressed && zoom < 1.0f)
+        zoom *= (1.0f + k*0.5f);
 
     if (zoomin_pressed)
-        zoom /= (1.0 + k*0.5);
+        zoom /= (1.0f + k*0.5f);
 }
 
 static GLuint setupShader(GLenum type, const char* path)
@@ -150,7 +152,7 @@ static void sceneInit()
     {
         char buf[512];
         glGetProgramInfoLog(shaderProgram, sizeof(buf), nullptr, buf);
-        // printf("Link error: %s", buf);
+        printf("Link error: %s", buf);
     }
     glDeleteShader(vsh);
     glDeleteShader(fsh);
@@ -224,13 +226,15 @@ static void sceneRender()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_1D, texture);
 
-    GLuint samplerLoc = glGetUniformLocation(shaderProgram, "palette");
+    GLuint paletteLoc = glGetUniformLocation(shaderProgram, "palette");
     GLuint offsetLoc = glGetUniformLocation(shaderProgram, "offset");
     GLuint zoomLoc = glGetUniformLocation(shaderProgram, "zoom");
+    GLuint mandIterLoc = glGetUniformLocation(shaderProgram, "mand_iter");
 
-    glUniform1i(samplerLoc, 0);
+    glUniform1i(paletteLoc, 0);
     glUniform1f(zoomLoc, zoom);
     glUniform2f(offsetLoc, cx, cy);
+    glUniform1f(mandIterLoc, MAND_ITER);
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -259,7 +263,7 @@ int main(void)
         exit(EXIT_FAILURE);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Mandelbrot", NULL, NULL);
     if (!window)
