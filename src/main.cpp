@@ -22,9 +22,9 @@ const GLfloat palette_data[] =
     0.0000, 0.0275, 0.3922
 };
 
-GLfloat cx = 0.0f;
-GLfloat cy = 0.0f;
-GLfloat zoom = 1.0f;
+GLdouble cx = 0.0f;
+GLdouble cy = 0.0f;
+GLdouble zoom = 1.0f;
 
 static void errorCallback(int error, const char* description)
 {
@@ -232,9 +232,9 @@ static void sceneRender()
     GLuint mandIterLoc = glGetUniformLocation(shaderProgram, "mand_iter");
 
     glUniform1i(paletteLoc, 0);
-    glUniform1f(zoomLoc, zoom);
-    glUniform2f(offsetLoc, cx, cy);
-    glUniform1f(mandIterLoc, MAND_ITER);
+    glUniform1d(zoomLoc, zoom);
+    glUniform2d(offsetLoc, cx, cy);
+    glUniform1d(mandIterLoc, MAND_ITER);
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -262,8 +262,8 @@ int main(void)
     if (!glfwInit())
         exit(EXIT_FAILURE);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Mandelbrot", NULL, NULL);
     if (!window)

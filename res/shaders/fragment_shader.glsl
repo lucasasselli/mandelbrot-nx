@@ -1,16 +1,21 @@
-#version 330 core
+#version 410 core
 
 uniform sampler1D palette;
-uniform float mand_iter;
+uniform double mand_iter;
+uniform dvec2 offset;
+uniform double zoom;
 
-in  vec2 c;
+
+in  vec2 pos;
 
 out vec4 FragColor;
 
 void main()
 {
-    vec2 o = vec2(0.0, 0.0);
-    vec2 z = vec2(0.0, 0.0);
+    dvec2 o = dvec2(0.0, 0.0);
+    dvec2 z = dvec2(0.0, 0.0);
+
+    dvec2 c = dvec2(pos)*zoom + offset;
 
     int n = 0;
 
