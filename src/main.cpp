@@ -10,7 +10,11 @@
 
 #include "device.h"
 
-#define MAND_ITER  256
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
+
+#define MAND_ITER  128
+#define MAND_SS    4
 
 const GLfloat palette_data[] =
 {
@@ -26,6 +30,8 @@ GLdouble cx = 0.0f;
 GLdouble cy = 0.0f;
 GLdouble zoom = 1.0f;
 
+GLfloat ratio = GLfloat(SCREEN_HEIGHT)/GLfloat(SCREEN_WIDTH);
+
 static void errorCallback(int error, const char* description)
 {
     printf("Error: %s\n", description);
@@ -37,6 +43,8 @@ static void frameBufferSizeCallback(GLFWwindow* window, int width, int height)
 	if (!width || !height)
 		return;
 
+    ratio = GLfloat(height)/GLfloat(width);
+
 	glViewport(0, 0, width, height);
 }
 
@@ -45,10 +53,10 @@ double oldTime = 0;
 static void handleGamepad(GLFWwindow* window, const GLFWgamepadstate& gamepad)
 {
 	double curTime = glfwGetTime();
-	float deltaTime = curTime - oldTime;
+	GLfloat deltaTime = curTime - oldTime;
     oldTime = curTime;
 
-    float k = deltaTime/0.1;
+    GLfloat k = deltaTime/0.1;
 
 	const bool left_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS;
 	const bool right_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS;
@@ -59,11 +67,6 @@ static void handleGamepad(GLFWwindow* window, const GLFWgamepadstate& gamepad)
 	const bool zoomout_pressed = gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER] == GLFW_PRESS;
 
 	const bool exit_pressed  = gamepad.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS;
-
-	// const float axis_x =  gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-	// const float axis_y = -gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
-	// const float axis_magnitude = sqrtf(axis_x*axis_x + axis_y*axis_y);
-	//const float axis_angle = atan2f(axis_y, axis_x);
 
     if (exit_pressed)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -227,14 +230,20 @@ static void sceneRender()
     glBindTexture(GL_TEXTURE_1D, texture);
 
     GLuint paletteLoc = glGetUniformLocation(shaderProgram, "palette");
+
+    GLuint mandIterLoc = glGetUniformLocation(shaderProgram, "mand_iter");
+    GLuint supersampleLoc = glGetUniformLocation(shaderProgram, "supersample");
+    GLuint ratioLoc = glGetUniformLocation(shaderProgram, "ratio");
+
     GLuint offsetLoc = glGetUniformLocation(shaderProgram, "offset");
     GLuint zoomLoc = glGetUniformLocation(shaderProgram, "zoom");
-    GLuint mandIterLoc = glGetUniformLocation(shaderProgram, "mand_iter");
 
     glUniform1i(paletteLoc, 0);
     glUniform1d(zoomLoc, zoom);
     glUniform2d(offsetLoc, cx, cy);
-    glUniform1d(mandIterLoc, MAND_ITER);
+    glUniform1i(mandIterLoc, MAND_ITER);
+    glUniform1i(supersampleLoc, MAND_SS);
+    glUniform1f(ratioLoc, ratio);
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -265,7 +274,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Mandelbrot", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Mandelbrot", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -284,8 +293,6 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        sceneRender();
-
         // Read gamepad
 		if (!glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad))
 		{
@@ -301,6 +308,8 @@ int main(void)
 			gamepad.buttons[GLFW_GAMEPAD_BUTTON_START] = glfwGetKey(window, GLFW_KEY_ESCAPE);
 		}
         handleGamepad(window, gamepad);
+
+        sceneRender();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

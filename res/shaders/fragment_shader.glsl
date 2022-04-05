@@ -1,10 +1,11 @@
 #version 410 core
 
 uniform sampler1D palette;
-uniform double mand_iter;
+uniform int mand_iter;
 uniform dvec2 offset;
 uniform double zoom;
-
+uniform int supersample;
+uniform float ratio;
 
 in  vec2 pos;
 
@@ -12,28 +13,41 @@ out vec4 FragColor;
 
 void main()
 {
-    dvec2 o = dvec2(0.0, 0.0);
-    dvec2 z = dvec2(0.0, 0.0);
+    int n_sum = 0;
 
-    dvec2 c = dvec2(pos)*zoom + offset;
+    double ss_factor_x = dFdx(pos.x)/double(supersample);
+    double ss_factor_y = dFdx(pos.y)/double(supersample);
 
-    int n = 0;
+    for(int i=0; i<supersample; i++){
+        for(int j=0; j<supersample; j++){
 
-    while(n < mand_iter && z.x*z.x+z.y*z.y <= 4)
-    {
+            int n = 0;
 
-        o.x = z.x * z.x - z.y * z.y;
-        o.y = 2*z.x*z.y;
+            dvec2 c = dvec2(pos.x-ss_factor_x*i, (pos.y-ss_factor_y*j)*ratio)*zoom + offset;
 
-        z = o;
-        z += c;
+            dvec2 o = dvec2(0.0, 0.0);
+            dvec2 z = dvec2(0.0, 0.0);
 
-        n++;
+            while(n < mand_iter && z.x*z.x+z.y*z.y <= 4)
+            {
+                o.x = z.x * z.x - z.y * z.y;
+                o.y = 2*z.x*z.y;
+
+                z = o;
+                z += c;
+
+                n++;
+            }
+
+            n_sum += n;
+        }
     }
 
-    if(n == mand_iter){
+    n_sum /= supersample*supersample;
+
+    if(n_sum >= mand_iter){
         FragColor = vec4(0.0, 0.0, 0.0, 0.0);
     }else{
-        FragColor = texture(palette, n/float(mand_iter)).rgba;
+        FragColor = texture(palette, n_sum/float(mand_iter)).rgba;
     }
 }
