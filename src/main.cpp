@@ -262,7 +262,6 @@ static void sceneExit()
 int main(void)
 {
     deviceInit();
-    printf("Program started!\n");
 
     // Init GLFW
     glfwInitHint(GLFW_JOYSTICK_HAT_BUTTONS, GLFW_FALSE);
@@ -321,7 +320,6 @@ int main(void)
     glfwTerminate();
 
     // Terminate device
-    printf("Program complete!\n");
     deviceStop();
 
     exit(EXIT_SUCCESS);
